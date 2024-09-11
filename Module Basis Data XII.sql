@@ -511,6 +511,8 @@ CREATE TABLE employee (
 );
 
 
+    
+
 show TABLES;
 INSERT INTO employee (name, age, job, salary) VALUES
 ('Gaby', 25, 'Accountant', 12000),
@@ -531,3 +533,269 @@ WHERE salary > (SELECT AVG(salary) FROM Employee);
 SELECT name, job 
 FROM employee 
 WHERE manager = 'Sam';
+
+
+
+----------------------------------------------------MODUL VII STORED PROCEDURE---------------------------------------------------------------------------------------
+
+
+SHOW TABLES;
+1. 
+DELIMITER //
+
+CREATE PROCEDURE getMahasiswa()
+BEGIN
+    SELECT * FROM mahasiswa;
+END //
+
+DELIMITER ;
+
+CALL `getMahasiswa`();
+
+DROP PROCEDURE getMahasiswa; 
+
+
+
+----2.Parameter IN
+
+DELIMITER //
+CREATE PROCEDURE getMhsBySemester(IN smt INT(2)) BEGIN
+SELECT * FROM Mata_kuliah
+WHERE semester = smt;
+END //
+DELIMITER ;
+
+DROP PROCEDURE `getMhsBySemester`;
+
+SHOW PROCEDURE STATUS;
+
+CALL getMhsBySemester (3);
+
+CREATE PROCEDURE getMhsBySemSks(IN smt INT(2), IN s INT(2)) BEGIN
+SELECT *
+FROM Mata_kuliah WHERE semester = smt AND sks = s;
+END // 
+
+DROP Procedure `getMhsBySemSks`;
+
+CALL getMhsBySemSks(3, 2);
+
+SET @smt = 3;
+
+SELECT @smt;
+
+CALL getMhsBySemester(@smt);
+
+CREATE PROCEDURE addJurusan( IN kode VARCHAR(2),
+IN nama VARCHAR(30), IN dos INT(3)
+)
+
+BEGIN
+
+INSERT INTO Jurusan VALUES(kode, nama, dos);
+END // 
+
+DROP PROCEDURE addJurusan;
+
+SELECT * FROM jurusan;
+
+CALL addJurusan('TG', 'Teknik Geodesi', 9); 
+
+
+--3. Paramter OUT
+
+CREATE PROCEDURE countMK(OUT total INT(2)) BEGIN
+SELECT COUNT(kode_mk)
+INTO total
+FROM Mata_Kuliah;
+ END; //
+
+CALL countMK(@total);
+
+SELECT @total AS total_mk;
+
+
+CREATE PROCEDURE cnt(OUT mk INT, OUT sks INT)
+BEGIN
+    SELECT COUNT(kode_mk) INTO mk FROM Mata_Kuliah;
+    SELECT SUM(SKS) INTO sks FROM Mata_Kuliah;
+END;
+
+
+CALL cnt(@mk, @sks);
+SELECT @mk AS total_mk, @sks AS total_sks;
+
+SELECT SUM(sks) FROM Mata_Kuliah;
+
+
+
+--4 paramter inout
+DELIMITER //
+CREATE PROCEDURE countBySex(INOUT arg VARCHAR(5)) BEGIN
+SELECT COUNT(NIM)
+INTO arg
+FROM Mahasiswa
+WHERE jenis_kelamin = arg; END //
+DELIMITER ;
+
+
+
+SET @var = 'L';
+CALL countBySex(@var);
+SELECT @var;
+
+
+
+
+
+DELIMITER //
+
+CREATE PROCEDURE countBySex2(IN sx VARCHAR(1), OUT total INT(5)) BEGIN
+SELECT COUNT(NIM)
+INTO total FROM Mahasiswa
+WHERE jenis_kelamin = sx; END //
+DELIMITER ;
+
+CALL countBySex2('L', @total); 
+
+SELECT @total;
+
+
+
+--5 pencabangan dan pengulangan
+
+DELIMITER //
+
+CREATE PROCEDURE demoIF(IN bil INT(3)) BEGIN
+DECLARE str	VARCHAR(30);
+IF (bil > 0) THEN
+SET str = 'Lebih dari Nol'; 
+ELSE
+SET str = 'Kurang dari / sama dengan Nol'; 
+END IF;
+SELECT str; END //
+DELIMITER ;
+
+CALL demoIF(5);
+
+DELIMITER //
+
+
+
+DELIMITER //
+
+CREATE PROCEDURE demoIF(IN bil INT(3)) BEGIN
+-- Deklarasi variabel di dalam stored procedure
+DECLARE str	VARCHAR(30);
+
+IF (bil > 0) THEN
+SET str = 'Lebih dari Nol'; ELSE
+SET str = 'Kurang dari / sama dengan Nol'; END IF;
+
+-- Mencetak output ke layar
+SELECT str; END //
+DELIMITER ;
+ DROP PROCEDURE demoIF
+
+ CALL demoIF(5)
+
+
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------praktikum module 04
+
+
+--1.
+ DELIMITER //
+
+CREATE PROCEDURE total(
+    OUT totalCourses INT,
+    OUT totalSKS INT
+)
+BEGIN
+    -- Menghitung jumlah matakuliah
+    SELECT COUNT(kode_mk) INTO totalCourses FROM Mata_kuliah;
+    
+    -- Menghitung jumlah total SKS
+    SELECT SUM(sks) INTO totalSKS FROM Mata_kuliah;
+END //
+
+DELIMITER ;
+
+CALL total(@totalCourses, @totalSKS);
+
+-- Untuk melihat hasilnya
+SELECT @totalCourses AS JumlahMatakuliah, @totalSKS AS TotalSKS;
+
+
+--2
+        DELIMITER //
+
+        CREATE PROCEDURE TambahAmbilMK(
+            IN p_nim VARCHAR(20),
+            IN p_kode_mk VARCHAR(20),
+            OUT p_status VARCHAR(50)
+        )
+        BEGIN
+            DECLARE nim_exists INT;
+            DECLARE kode_mk_exists INT;
+            
+            -- Cek apakah nim ada di tabel mahasiswa
+            SELECT COUNT(*) INTO nim_exists FROM Mahasiswa WHERE nim = p_nim;
+            
+            -- Cek apakah kode_mk ada di tabel matakuliah
+            SELECT COUNT(*) INTO kode_mk_exists FROM Mata_kuliah WHERE kode_mk = p_kode_mk;
+            
+            -- Jika nim dan kode_mk keduanya ada
+            IF nim_exists > 0 AND kode_mk_exists > 0 THEN
+                -- Tambahkan data ke tabel ambil_mk
+                INSERT INTO Ambil_MK (nim, kode_mk) VALUES (p_nim, p_kode_mk);
+                SET p_status = 'OK';
+            ELSE
+                -- Jika nim atau kode_mk tidak ada, kembalikan pesan gagal
+                SET p_status = 'Operasi Gagal';
+            END IF;
+        END //
+
+        DELIMITER ;
+
+    DROP Procedure TambahAmbilMK;
+
+CALL TambahAmbilMK('101', 'PTI123', @status);
+SELECT @status AS StatusOperasi;
+
+---3
+DELIMITER //
+CREATE PROCEDURE upsertDosen(IN kode_dos INT(10), IN nama_dos VARCHAR(100), IN alamat_dos VARCHAR(100))
+BEGIN
+    -- Memeriksa apakah dosen dengan NIDN tersebut sudah ada di tabel
+    IF EXISTS (SELECT 1 FROM Dosen WHERE kode_dosen = kode_dos) THEN
+        -- Jika dosen sudah ada, lakukan update
+        UPDATE Dosen
+        SET nama_dosen = nama_dos, alamat_dosen = alamat_dos
+        WHERE kode_dosen = kode_dos;
+    ELSE
+        -- Jika dosen belum ada, lakukan insert
+        INSERT INTO Dosen (kode_dosen, nama_dosen, alamat_dosen)
+        VALUES (kode_dos, nama_dos, alamat_dos);
+    END IF;
+END //
+DELIMITER;
+
+CALL upsertDosen('80', 'dinda', 'montong');
+CALL upsertDosen('10', 'zakki', 'tuban');
+
+SELECT * FROM Dosen;
+
+DROP PROCEDURE upsertDosen;
+
+use module_03

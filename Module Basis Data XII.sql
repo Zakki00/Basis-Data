@@ -245,7 +245,6 @@ SELECT * FROM Mata_Kuliah;
 
 SELECT Nama_Lengkap NIM, Jenis_Kelamin FROM mahasiswa WHERE Jurusan = 'Pendidikan Ilmu Komputer';
 
-
 UPDATE mahasiswa SET Jurusan = 'Sistem Informasi' WHERE NIIM = '1300001';
 
 DELETE FROM mahasiswa WHERE NIM = '1300003';
@@ -270,6 +269,8 @@ ALTER TABLE mahasiswa ADD alamat VARCHAR(50) NOT NULL; -----menambahkan kolom
 ALTER TABLE mahasiswa DROP alamat; ----menghapus kolom
 ALTER TABLE mahasiswa CHANGE alamat nama_alamat VARCHAR(50) NOT NULL; ----mengubah kolom, setelah syintax chnage harus ada kolom lama dan kolom baru
 RENAME TABLE nama_table TO nama_baru; ----mengganti nama table
+
+ALTER DATABASE kuliah CHANGE TO SEKOLAH;
 
 
 
@@ -431,6 +432,15 @@ SELECT * FROM Mata_kuliah WHERE SKS = (SELECT MAX(SKS) FROM Mata_kuliah);
 -------------------Subquery dan Join
 SELECT M.NIM, M.Nama FROM Mahasiswa M LEFT OUTER JOIN Ambil_MK A ON M.NIM = A.NIM WHERE A.NIM IS NULL; ---------> Pendekatan Join
 SELECT M.NIM, M.Nama FROM Mahasiswa M WHERE M.NIM NOT IN (SELECT NIM FROM Ambil_MK); -------------> Pendekatan subquery
+
+SELECT mahasiswa.NIM, mahasiswa.Nama FROM mahasiswa
+INNER JOIN ambil_mk ON ambil_mk.NIM = mahasiswa.NIM;
+
+
+
+SELECT * FROM ambil_mk;
+
+SELECT * from mahasiswa;
 
 
 

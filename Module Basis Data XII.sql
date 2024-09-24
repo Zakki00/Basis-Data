@@ -809,3 +809,128 @@ SELECT * FROM Dosen;
 DROP PROCEDURE upsertDosen;
 
 use module_03
+
+
+
+----------------------------------Module 5 Triger
+
+
+
+
+drop DATABASE toko;
+
+CREATE database toko;
+
+use toko;
+
+
+-------nama tabl yang di gunakan
+CREATE TABLE barang (
+    id_brg INT PRIMARY KEY,
+    nama_brg VARCHAR(100),
+    stok INT
+);
+
+CREATE TABLE pembelian (
+    id_pembelian INT PRIMARY KEY,
+    id_brg INT,
+    jml_beli INT,
+    FOREIGN KEY (id_brg) REFERENCES barang(id_brg)
+);
+
+
+INSERT INTO barang (id_brg, nama_brg, stok)
+VALUES
+(1, 'Laptop', 50),
+(2, 'Mouse', 200),
+(3, 'Keyboard', 150),
+(4, 'Monitor', 100),
+(5, 'Printer', 80);
+
+
+CREATE TABLE pembayaran (
+    id_pem INT PRIMARY KEY,
+    jumlah INT);
+
+ALTER TABLE barang ADD COLUMN harga INT;
+UPDATE barang SET harga = 10000;
+
+
+
+---------soal praktikum 
+DELIMITER //
+CREATE TRIGGER BonusPembelian
+BEFORE INSERT ON pembelian
+FOR EACH ROW
+BEGIN
+  
+
+    -- Hitung bonus berdasarkan jumlah pembelian
+    IF NEW.jml_beli > 100 AND NEW.jml_beli < 200 THEN
+        SET NEW.jml_beli = NEW.jml_beli + 10;
+    ELSEIF NEW.jml_beli >= 200 AND NEW.jml_beli < 300 THEN
+        SET NEW.jml_beli = NEW.jml_beli + 20;
+    ELSEIF NEW.jml_beli >= 300 THEN
+        SET NEW.jml_beli = NEW.jml_beli + 50;
+    END IF;
+
+    UPDATE barang
+    SET stok = stok - NEW.jml_beli
+    WHERE id_brg = NEW.id_brg;
+
+END //
+DELIMITER ;
+
+DROP TRIGGER BonusPembelian;
+-- Trigger akan dijalankan setiap kali data di tabel pembelian diinsert
+
+
+
+
+
+
+INSERT INTO pembelian (id_pembelian, id_brg, jml_beli)
+VALUES (4, 3, 120); -- Misalnya, membeli 150 unit dari barang dengan id_brg = 1 (Laptop)
+
+
+select * from pembelian;
+
+SELECT * FROM barang;
+
+------2
+DELIMITER //
+ CREATE TRIGGER TotalHarga
+AFTER INSERT ON pembelian
+FOR EACH ROW
+BEGIN
+    DECLARE total_pembayaran DECIMAL(10, 2);
+    DECLARE jml_beli INT;
+
+    -- Hitung total pembayaran
+    SELECT harga INTO @harga FROM barang WHERE id_brg = NEW.id_brg;
+    SET total_pembayaran = @harga * NEW.jml_beli;
+
+    -- Insert ke tabel pembayaran
+    INSERT INTO pembayaran (jumlah) VALUES (total_pembayaran);
+
+    -- Penyesuaian stok barang
+    SET jml_beli = NEW.jml_beli;
+
+    -- Hitung bonus berdasarkan jumlah pembelian
+    IF jml_beli > 100 AND jml_beli < 200 THEN
+        SET jml_beli = jml_beli + 10;
+    ELSEIF jml_beli >= 200 AND jml_beli < 300 THEN
+        SET jml_beli = jml_beli + 20;
+    ELSEIF jml_beli >= 300 THEN
+        SET jml_beli = jml_beli + 50;
+    END IF;
+
+    -- Update stok barang
+    UPDATE barang
+    SET stok = stok - jml_beli
+    WHERE id_brg = NEW.id_brg;
+END//
+
+DROP Trigger Ro
+
+SELECT * FROM pembayaran;

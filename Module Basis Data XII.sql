@@ -2,6 +2,8 @@
 --Untuk memebuat databsae
 CREATE DATABASE PERUSAHAAN;
 
+use PERUSAHAAN;
+
 CREATE DATABASE Rumah;
 
 
@@ -815,8 +817,7 @@ use module_03
 ----------------------------------Module 5 Triger
 
 
-
-
+----latihan
 drop DATABASE toko;
 
 CREATE database toko;
@@ -824,40 +825,187 @@ CREATE database toko;
 use toko;
 
 
+----nama table yang di gunakan untuk latihan
+CREATE TABLE barang (
+id_brg varchar(5) NOT NULL, nama_brg varchar(30) NOT NULL, stok int(5) NOT NULL,
+PRIMARY KEY (id_brg)
+);
+
+CREATE TABLE pembelian ( id_pem VARCHAR(5) NOT NULL, id_brg varchar(5) NOT NULL, jml_beli int(5) NOT NULL);
+DROP TABLE pembelian;
+INSERT INTO barang (id_brg, nama_brg, stok)
+VALUES 
+    ('A10', 'Mouse', 10),
+    ('A11', 'Keyboard', 15),
+    ('A12', 'DVD R-W', 10);
+
+INSERT INTO pembelian (id_pem, id_brg, jml_beli) VALUES
+(1, 'A10', 5);
+
+
+
+
+
+
+
 -------nama tabl yang di gunakan
 CREATE TABLE barang (
-    id_brg INT PRIMARY KEY,
+    id_brg INT(100) PRIMARY KEY,
     nama_brg VARCHAR(100),
-    stok INT
+    stok INT,
+    harga INT
 );
+DROP TABLE barang;
 
 CREATE TABLE pembelian (
-    id_pembelian INT PRIMARY KEY,
+    id_pembelian INT AUTO_INCREMENT PRIMARY KEY,
     id_brg INT,
-    jml_beli INT,
-    FOREIGN KEY (id_brg) REFERENCES barang(id_brg)
+    jml_beli INT 
 );
-
-
-INSERT INTO barang (id_brg, nama_brg, stok)
-VALUES
-(1, 'Laptop', 50),
-(2, 'Mouse', 200),
-(3, 'Keyboard', 150),
-(4, 'Monitor', 100),
-(5, 'Printer', 80);
+DROP Table pembelian;
 
 
 CREATE TABLE pembayaran (
-    id_pem INT PRIMARY KEY,
+    id_pem INT  AUTO_INCREMENT PRIMARY KEY,
     jumlah INT);
 
-ALTER TABLE barang ADD COLUMN harga INT;
-UPDATE barang SET harga = 10000;
+    CREATE TABLE log_pembelian (
+        id_log INT AUTO_INCREMENT PRIMARY KEY,
+        waktu DATETIME,
+        operasi TEXT
+    );
+
+DROP TABLE log_pembelian;
+
+
+INSERT INTO barang (id_brg, nama_brg, stok, harga)
+VALUES
+(1, 'Laptop', 50000, 1000),
+(2, 'Mouse', 20000, 1000),
+(3, 'Keyboard', 15000, 1000),
+(4, 'Monitor', 10000 , 1000),
+(5, 'Printer', 80000,1000);
+
+DROP Table barang;
+
+select * from pembelian;
+
+SELECT * FROM barang;
+
+SELECT * FROM pembayaran;
+
+SELECT* FROM log_pembelian;
+
+
+
+--------------------------------------Latihan Module 5
+
+---1 menggunakan triger
+
+DELIMITER //
+CREATE TRIGGER inkremenStok2 BEFORE INSERT ON barang
+
+FOR EACH ROW BEGIN
+
+-- Menambah nilai stok dengan 1
+SET NEW.stok = NEW.stok + 1; END //
+DELIMITER ;
+
+INSERT INTO barang
+ VALUES('A13', 'Modem', 5);
+
+SELECT * FROM barang;
+
+SHOW TRIGGERS\G;---unutk melihat triger yang di punya 
+
+DROP TRIGGER inkremenStok; ---- unutuk menghapus triger yang dipilih
+
+
+
+---2 Keyword OLD and NEW
+---2.1 triger menggunakan keyword new pada triger insert
+DELIMITER //
+
+CREATE TRIGGER updateStok AFTER INSERT ON pembelian
+
+FOR EACH ROW BEGIN 
+
+-- Update nilai stok barang
+UPDATE barang
+SET stok = stok + NEW.jml_beli WHERE id_brg = NEW.id_brg;
+END // DELIMITER ;
+
+DROP TRIGGER updateStok;
+
+SELECT * FROM barang;
+
+INSERT INTO pembelian
+VALUES ( 2,'A10', 10);
+
+
+---2.2 triger menggunakan keyword old pada triger delete
+
+DELIMITER //
+
+CREATE TRIGGER deleteChild AFTER DELETE ON barang
+
+FOR EACH
+ ROW BEGIN
+DELETE FROM pembelian
+WHERE id_brg = OLD.id_brg;
+END;
+DELIMITER ;
+
+SELECT * FROM pembelian;
+DELETE FROM barang WHERE id_brg = 'A10';
+
+
+
+--2.3 triger menggunakan keyword old pada triger update
+
+DELIMITER //
+
+CREATE TRIGGER updateStokEdit AFTER UPDATE ON pembelian
+FOR EACH ROW BEGIN
+UPDATE barang
+SET stok = stok + (NEW.jml_beli - OLD.jml_beli) WHERE id_brg = NEW.id_brg;
+END //
+ DELIMITER ;
+
+SELECT * FROM pembelian;
+
+UPDATE pembelian
+SET jml_beli = 20 WHERE id_pem = 3;
+
+SELECT * FROM barang;
+
+
+
+------------3 Triger Komplkes
+DELIMITER //
+
+CREATE TRIGGER auditBarang BEFORE INSERT ON barang
+
+FOR EACH ROW BEGIN
+
+IF NOT EXISTS (SELECT id_brg FROM barang WHERE id_brg = NEW.id_brg)THEN
+    SET NEW.nama_brg = NEW.nama_brg, NEW.stok = NEW.stok; 
+ELSE
+    SET @status = CONCAT('Id ', NEW.id_brg, ' sudah ada'); END IF;
+END //
+
+DELIMITER ;
+
+
+
+
+
+
 
 
 
 ---------soal praktikum 
+---1
 DELIMITER //
 CREATE TRIGGER BonusPembelian
 BEFORE INSERT ON pembelian
@@ -882,25 +1030,21 @@ END //
 DELIMITER ;
 
 DROP TRIGGER BonusPembelian;
--- Trigger akan dijalankan setiap kali data di tabel pembelian diinsert
 
 
+INSERT INTO pembelian (id_brg, jml_beli) VALUES (1, 110);
+INSERT INTO pembelian (id_brg, jml_beli) VALUES (1, 210);
+INSERT INTO pembelian (id_brg, jml_beli) VALUES (1, 310);
+
+    SELECT * FROM pembelian;
+    SELECT * FROM barang;
 
 
-
-
-INSERT INTO pembelian (id_pembelian, id_brg, jml_beli)
-VALUES (4, 3, 120); -- Misalnya, membeli 150 unit dari barang dengan id_brg = 1 (Laptop)
-
-
-select * from pembelian;
-
-SELECT * FROM barang;
-
+UPDATE barang SET harga = 1000;
 ------2
 DELIMITER //
  CREATE TRIGGER TotalHarga
-AFTER INSERT ON pembelian
+BEFORE INSERT ON pembelian
 FOR EACH ROW
 BEGIN
     DECLARE total_pembayaran DECIMAL(10, 2);
@@ -913,24 +1057,175 @@ BEGIN
     -- Insert ke tabel pembayaran
     INSERT INTO pembayaran (jumlah) VALUES (total_pembayaran);
 
-    -- Penyesuaian stok barang
-    SET jml_beli = NEW.jml_beli;
-
+ 
     -- Hitung bonus berdasarkan jumlah pembelian
-    IF jml_beli > 100 AND jml_beli < 200 THEN
-        SET jml_beli = jml_beli + 10;
-    ELSEIF jml_beli >= 200 AND jml_beli < 300 THEN
-        SET jml_beli = jml_beli + 20;
-    ELSEIF jml_beli >= 300 THEN
-        SET jml_beli = jml_beli + 50;
+    IF NEW.jml_beli > 100 AND NEW.jml_beli < 200 THEN
+        SET NEW.jml_beli = NEW.jml_beli + 10;
+    ELSEIF NEW.jml_beli >= 200 AND NEW.jml_beli < 300 THEN
+        SET NEW.jml_beli = NEW.jml_beli + 20;
+    ELSEIF NEW.jml_beli >= 300 THEN
+        SET NEW.jml_beli = NEW.jml_beli + 50;
     END IF;
 
-    -- Update stok barang
     UPDATE barang
-    SET stok = stok - jml_beli
+    SET stok = stok - NEW.jml_beli
     WHERE id_brg = NEW.id_brg;
 END//
 
-DROP Trigger Ro
+DELIMITER;
+
+DROP TRIGGER TotalHarga;
+
+
+INSERT INTO pembelian (id_brg, jml_beli)
+VALUES (3, 120);
+
+
+    SELECT * FROM pembayaran;
+        SELECT * FROM barang;
+
+
+
+
+---3
+DELIMITER //
+CREATE TRIGGER HISTORY_INSERT
+AFTER INSERT ON pembelian
+FOR EACH ROW
+BEGIN
+        INSERT INTO log_pembelian (waktu, operasi)
+         VALUES (NOW(), CONCAT('Menambahkan data ID Pembelian:', NEW.id_pembelian));
+END;
+DELIMITER ;
+
+
+DROP TRIGGER HISTORY_INSERT;
+
+INSERT INTO pembelian ( id_brg, jml_beli) VALUES
+( 1, 10);
+SELECT * FROM log_pembelian;
+SELECT * FROM pembelian;
+
+
+
+
+DELIMITER //
+CREATE TRIGGER HISTORY_UPDATE
+AFTER UPDATE ON pembelian
+FOR EACH ROW
+BEGIN
+    UPDATE log_pembelian
+    SET 
+        waktu = NOW(), 
+        operasi = CONCAT('Mengubah Data ID_Brang:',  OLD.id_brg,' Dan Mengubah Jumlah Beli: ', OLD.jml_beli, 
+                        ' Menjadi ID_Brang: ', NEW.id_brg,' Dan Jumlah Beli: ', NEW.jml_beli)
+    WHERE id_log = NEW.id_pembelian;
+END;//
+DELIMITER ;
+
+DROP TRIGGER HISTORY_UPDATE;
+
+SELECT * FROM pembelian;
+UPDATE pembelian SET jml_beli = 50 WHERE id_pembelian = 1;
+
+SELECT * FROM log_pembelian;
+
+
+
+
+
+    DELIMITER //
+    CREATE TRIGGER HISTORY_DELETE
+    AFTER DELETE ON pembelian
+    FOR EACH ROW
+    BEGIN
+    DELETE FROM log_pembelian WHERE id_log = OLD.id_pembelian;
+    END;//
+
+    DELIMITER ;
+
+DROP TRIGGER HISTORY_DELETE;
+DELETE FROM pembelian WHERE id_pembelian = 1;
+SELECT * FROM log_pembelian;
+SELECT * FROM pembelian;
+
+
+
+
+
+INSERT INTO pembelian (id_pembelian, id_brg, jml_beli) VALUES
+(14, 4, 10)
+
+
+
+select * from pembelian;
+
+SELECT * FROM barang;
 
 SELECT * FROM pembayaran;
+
+SELECT* FROM log_pembelian;
+
+
+USE peminjaman_barang;
+
+SELECT * FROM User 
+INNER JOIN transaksi on user.iduser = transaksi.iduser
+INNER JOIN barang on transaksi.idbarang = barang.idbarang
+WHERE user.iduser = 1;
+;
+
+    insert into transaksi (
+        iduser, idbarang,tanggla_peminjaman,tanggla_pengembalian,jumlah
+    )VALUES(1, 1, 2024-11-26, 2024-11-27, 1);
+
+
+
+
+
+
+-----------------------------------------------strorage procedure [02]-------------------------------------
+
+drop DATABASE TOKO2;
+CREATE DATABASE TOKO2;
+
+USE TOKO2;
+
+
+--1.
+CREATE TABLE barang (
+    nama_barang VARCHAR (200) PRIMARY KEY,
+    satuan VARCHAR (200),
+    harga INT,
+    jumlah INT
+
+ );
+
+DELIMITER //
+CREATE PROCEDURE insertDataBarang (in_NamaBarang VARCHAR(200), in_satuan VARCHAR(200), in_harga INT, in_jumlah INT)
+BEGIN
+    INSERT INTO barang (nama_barang, satuan, harga, jumlah) VALUES (in_NamaBarang, in_satuan, in_harga, in_jumlah);
+END;
+
+SELECT * FROM barang;   
+
+CALL insertDataBarang('SIKAT GIGI', 'Bungkus', 4000, 10);
+CALL insertDataBarang('sabun', 'Bungkus', 10000, 50);
+
+--2. 
+
+CREATE PROCEDURE updateDataBarang (in_NamaBarang VARCHAR(200), in_harga INT)
+BEGIN
+    UPDATE barang SET harga = in_harga WHERE nama_barang = in_NamaBarang;
+END;
+CALL updateDataBarang('SIKAT GIGI', 10000);
+
+--3.
+
+CREATE PROCEDURE deleteDataBarang (in_NamaBarang VARCHAR(200))
+BEGIN
+    DELETE FROM barang WHERE nama_barang = in_NamaBarang;
+END;
+
+CALL deleteDataBarang('sabun');
+
